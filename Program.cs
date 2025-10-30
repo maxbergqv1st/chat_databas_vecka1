@@ -154,7 +154,7 @@ class Program
                   cmd.ExecuteNonQuery();
                   Console.WriteLine("Användare tillagd");
             }
-            catch (SqliteException ex)
+            catch (SqliteException) // ex
             {
                   Console.WriteLine("Fel vid skapandet av accountet");
             }
@@ -249,7 +249,9 @@ class Program
             checkCmd.Parameters.AddWithValue("$a", userId1);
             checkCmd.Parameters.AddWithValue("$b", userId2);
 
-            long exists = (long)checkCmd.ExecuteScalar();
+            object? result = checkCmd.ExecuteScalar();
+            long exists = Convert.ToInt64(result ?? 0); // om result är null → 0
+            
             if (exists > 0)
             {
                   Console.WriteLine("Ni är redan vänner!");
@@ -314,7 +316,6 @@ class Program
                   StartChat(connection, loggedInId, friendId);
             }
       }
-
       void StartChat(SqliteConnection connection, int senderId, int receiverId)
       {
             Console.Clear();
@@ -358,9 +359,7 @@ class Program
                   insertCmd.Parameters.AddWithValue("$r", receiverId);
                   insertCmd.Parameters.AddWithValue("$msg", message);
                   insertCmd.ExecuteNonQuery();
-
                   Console.WriteLine("Meddelande skickat!");
             }
       }
 }
-
