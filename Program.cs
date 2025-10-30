@@ -76,7 +76,6 @@ class Program
                               case "3":
                                     {
                                           ChatWithFriends(connection);
-                                          Console.ReadLine();
                                     }
                                     break;
                               case "L":
@@ -351,15 +350,26 @@ class Program
                   string? message = Console.ReadLine();
                   if (message == null || message.ToLower() == "exit") break;
 
-                  var insertCmd = connection.CreateCommand();
-                  insertCmd.CommandText = @"
-                        INSERT INTO Messages (SenderId, ReceiverId, MessageText)
-                        VALUES ($s, $r, $msg)";
-                  insertCmd.Parameters.AddWithValue("$s", senderId);
-                  insertCmd.Parameters.AddWithValue("$r", receiverId);
-                  insertCmd.Parameters.AddWithValue("$msg", message);
-                  insertCmd.ExecuteNonQuery();
-                  Console.WriteLine("Meddelande skickat!");
+                  if (message != "")
+                  {
+                        var insertCmd = connection.CreateCommand();
+                        insertCmd.CommandText = @"
+                              INSERT INTO Messages (SenderId, ReceiverId, MessageText)
+                              VALUES ($s, $r, $msg)";
+                        insertCmd.Parameters.AddWithValue("$s", senderId);
+                        insertCmd.Parameters.AddWithValue("$r", receiverId);
+                        insertCmd.Parameters.AddWithValue("$msg", message);
+                        insertCmd.ExecuteNonQuery();
+                        Console.WriteLine("Meddelande skickat!");
+                        Console.ReadLine();
+                  }
+                  else
+                  {
+                        Console.WriteLine("Meddelandet gick inte att skicka");
+                        Console.ReadLine();
+                  }
+                  
+                  
             }
       }
 }
