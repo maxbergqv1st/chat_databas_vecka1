@@ -1,6 +1,20 @@
 ﻿using System;
 using System.Diagnostics;
 using Microsoft.Data.Sqlite;
+
+// ExecuteNonQuery() används för att updatera databasen 
+//INSERT 
+//UPDATE 
+//DELETE 
+//CREATE TABLE
+
+//ExecuteReader() används när du vill läsa data
+// SELECT
+
+// ExecuteScalar() används när du vill hämta ett enda värde 
+// COUNT(*) 
+// MAX(id)
+
 class Program
 {
       static void Main()
@@ -27,25 +41,28 @@ class Program
                         Console.WriteLine("2. Lägg till användare");
                         Console.WriteLine("\nQ. Quit\n");
                         Console.Write("Val: ");
-                        string? choice = Console.ReadLine();
-                        switch (choice)
+
+                        ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                        char key = keyInfo.KeyChar;
+
+                        switch (key)
                         {
-                              case "1":
+                              case '1':
                                     {
                                           loggedIn = Login(connection);
                                     }
                                     break;
-                              case "2":
+                              case '2':
                                     {
                                           AddUser(connection);
                                     }
                                     break;
-                              case "3":
+                              case '3':
                                     {
                                     }
                                     break;
-                              case "Q":
-                              case "q":
+                              case 'Q':
+                              case 'q':
                                     {
                                           running = false;
                                     }
@@ -59,27 +76,36 @@ class Program
                         Console.WriteLine("1] Profil ");
                         Console.WriteLine("2] Browse other users ");
                         Console.WriteLine("3] Chatta med vänner");
+                        Console.WriteLine("4] Ändra lösenord");
                         Console.WriteLine("L] Logga ut ");
-                        switch (Console.ReadLine())
+
+                        ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                        char key = keyInfo.KeyChar;
+
+                        switch (key)
                         {
-                              case "1":
+                              case '1':
                                     {
                                           ProfileLoggedIn(connection);
                                     }
                                     break;
-                              case "2":
+                              case '2':
                                     {
                                           BrowseFriends(connection);
-                                          Console.ReadLine();
                                     }
                                     break;
-                              case "3":
+                              case '3':
                                     {
                                           ChatWithFriends(connection);
                                     }
                                     break;
-                              case "L":
-                              case "l":
+                              case '4':
+                                    {
+                                          ChangePassword(connection);
+                                    }
+                                    break;
+                              case 'L':
+                              case 'l':
                                     {
                                           loggedIn = false;
                                     }
@@ -105,8 +131,6 @@ class Program
             WHERE Username = $un AND Password = $pw";
             cmd.Parameters.AddWithValue("$un", username);
             cmd.Parameters.AddWithValue("$pw", password);
-
-
 
             using var reader = cmd.ExecuteReader();
             if (reader.Read())
@@ -157,6 +181,43 @@ class Program
             {
                   Console.WriteLine("Fel vid skapandet av accountet");
             }
+      }
+      void ChangePassword(SqliteConnection connection)
+      {
+            if (loggedInUsername == null)
+            {
+                  Console.Clear();
+                  Console.WriteLine("Du måste vara inloggad för att ändra lösenord");
+                  return;
+            }
+
+            var getUserIdCmd = connection.CreateCommand();
+            getUserIdCmd.CommandText = "SELECT UserId FROM User WHERE Username = $un";
+            getUserIdCmd.Parameters.AddWithValue("$un", loggedInUsername); //Hämtar loggedIn UserId
+            int userId = Convert.ToInt32(getUserIdCmd.ExecuteScalar()); // Antar att vi alltid kommer ha ett id på den inloggade usern
+
+            Console.Clear();
+            Console.WriteLine("Skriv in ett nytt lösenord: ");
+            string? newPassword = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                  Console.WriteLine("Lösenordet får inte vara tomt.");
+                  return;
+            }
+
+            var updateCmd = connection.CreateCommand();
+            updateCmd.CommandText = @"
+                  UPDATE User
+                  SET Password = $pw
+                  WHERE UserId = $id
+            ";
+            updateCmd.Parameters.AddWithValue("$pw", newPassword);
+            updateCmd.Parameters.AddWithValue("$id", userId);
+
+            updateCmd.ExecuteNonQuery();
+            Console.WriteLine("Lösenordet har uppdaterats!");
+            Console.ReadLine();
       }
       void ProfileLoggedIn(SqliteConnection connection)
       {
@@ -250,7 +311,7 @@ class Program
 
             object? result = checkCmd.ExecuteScalar();
             long exists = Convert.ToInt64(result ?? 0); // om result är null → 0
-            
+
             if (exists > 0)
             {
                   Console.WriteLine("Ni är redan vänner!");
@@ -319,7 +380,7 @@ class Program
       {
             Console.Clear();
             Console.WriteLine("=== Chat ===");
-            Console.WriteLine("Skriv 'exit' för att avsluta chatten.\n");
+
 
             // Visa tidigare meddelanden
             var showCmd = connection.CreateCommand();
@@ -339,14 +400,38 @@ class Program
             {
                   while (reader.Read())
                   {
-                        Console.WriteLine($"[{reader.GetString(0)}]: {reader.GetString(1)}");
+                        string sender = reader.GetString(0);
+                        string message = reader.GetString(1);
+                        if (sender == "Du")
+                        {
+                              // Högerjustera texten visuellt utan att färga mellanslag
+                              int consoleWidth = 60; // eller Console.WindowWidth
+                              int padding = consoleWidth - message.Length;
+                              padding = Math.Max(padding, 0);
+
+                              // Skriv mellanslag först (utan bakgrund)
+                              Console.ResetColor();
+                              Console.Write(new string(' ', padding));
+
+                              // Skriv texten med bakgrund
+                              Console.BackgroundColor = ConsoleColor.DarkBlue;
+                              Console.ForegroundColor = ConsoleColor.White;
+                              Console.WriteLine(message + "\n");
+                        }
+                        else
+                        {
+                              Console.BackgroundColor = ConsoleColor.DarkGray;
+                              Console.ForegroundColor = ConsoleColor.White;
+                              Console.WriteLine($"[{sender}]: {message} \n");
+                        }
+                        Console.ResetColor();
                   }
             }
 
             // Skicka nya meddelanden
             while (true)
             {
-                  Console.Write("\nDu: ");
+                  Console.Write("'exit' för att avluta chatten \nDu: ");
                   string? message = Console.ReadLine();
                   if (message == null || message.ToLower() == "exit") break;
 
@@ -368,8 +453,6 @@ class Program
                         Console.WriteLine("Meddelandet gick inte att skicka");
                         Console.ReadLine();
                   }
-                  
-                  
             }
       }
 }
