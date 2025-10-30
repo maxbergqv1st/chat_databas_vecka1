@@ -15,6 +15,13 @@ using Microsoft.Data.Sqlite;
 // COUNT(*) 
 // MAX(id)
 
+// EXEMPEL
+// var cmd = connection.CreateCommand();
+// cmd.CommandText = "UPDATE User SET Password = $pw WHERE UserId = $id";
+// cmd.Parameters.AddWithValue("$pw", "nyttlösen");
+// cmd.Parameters.AddWithValue("$id", 1);
+// int rows = cmd.ExecuteNonQuery(); // ex. 1 om 1 rad ändrades
+
 class Program
 {
       static void Main()
