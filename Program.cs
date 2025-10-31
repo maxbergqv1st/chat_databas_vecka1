@@ -46,6 +46,7 @@ class Program
                         Console.Clear();
                         Console.WriteLine("1. Logga in");
                         Console.WriteLine("2. Lägg till användare");
+                         Console.WriteLine("3. Glömt ditt lösenord");
                         Console.WriteLine("\nQ. Quit\n");
                         Console.Write("Val: ");
 
@@ -66,6 +67,7 @@ class Program
                                     break;
                               case '3':
                                     {
+                                          ChangePasswordLoginPage(connection);
                                     }
                                     break;
                               case 'Q':
@@ -226,6 +228,55 @@ class Program
             Console.WriteLine("Lösenordet har uppdaterats!");
             Console.ReadLine();
       }
+
+      void ChangePasswordLoginPage(SqliteConnection connection)
+      {
+            Console.Clear();
+            Console.WriteLine("Skriv in ditt username: ");
+            string? usernameInput = Console.ReadLine();
+
+
+            var getUserIdCmd = connection.CreateCommand();
+            getUserIdCmd.CommandText = "SELECT UserId FROM User WHERE Username = $un";
+            getUserIdCmd.Parameters.AddWithValue("$un", usernameInput); //Hämtar loggedIn UserId
+
+            Console.WriteLine("Skriv in din safety key");
+            string? safetyInput = Console.ReadLine();
+
+            getUserIdCmd.CommandText = "SELECT UserId FROM User WHERE Safety = $sf"; // Hämtar safety key
+            getUserIdCmd.Parameters.AddWithValue("$sf", safetyInput); //Hämtar loggedIn UserId
+
+            if(string.IsNullOrWhiteSpace(safetyInput))
+            {
+                  Console.WriteLine("Safetykey kan inte vara tom...");            
+            }
+
+            int userId = Convert.ToInt32(getUserIdCmd.ExecuteScalar()); // Antar att vi alltid kommer ha ett id på den inloggade usern
+
+            Console.Clear();
+            Console.WriteLine("Skriv in ett nytt lösenord: ");
+            string? newPassword = Console.ReadLine();
+
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                  Console.WriteLine("Lösenordet får inte vara tomt.");
+                  return;
+            }
+
+            var updateCmd = connection.CreateCommand();
+            updateCmd.CommandText = @"
+                  UPDATE User
+                  SET Password = $pw
+                  WHERE UserId = $id
+            ";
+            updateCmd.Parameters.AddWithValue("$pw", newPassword);
+            updateCmd.Parameters.AddWithValue("$id", userId);
+
+            updateCmd.ExecuteNonQuery();
+            Console.WriteLine("Lösenordet har uppdaterats!");
+            Console.ReadLine();
+      }
+
       void ProfileLoggedIn(SqliteConnection connection)
       {
             if (loggedInUsername == null)
